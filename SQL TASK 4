@@ -1,0 +1,51 @@
+✅ Task 4 – Database Backup and Recovery
+
+Step 1: Full Database Backup
+---------------------------
+
+-- Oracle: Using RMAN
+RUN {
+  ALLOCATE CHANNEL c1 DEVICE TYPE DISK;
+  BACKUP DATABASE FORMAT 'C:\OracleBackups\full_db_%U.bkp';
+  RELEASE CHANNEL c1;
+}
+
+-- MySQL: Using mysqldump (Command Line)
+mysqldump -u root -p cafedb > C:\MySQLBackups\cafedb_backup.sql
+
+Step 2: Incremental Backup (Oracle)
+----------------------------------
+-- Backup only changed blocks since last backup
+RUN {
+  ALLOCATE CHANNEL c1 DEVICE TYPE DISK;
+  BACKUP INCREMENTAL LEVEL 1 DATABASE FORMAT 'C:\OracleBackups\incr_db_%U.bkp';
+  RELEASE CHANNEL c1;
+}
+
+Step 3: Restore / Recovery
+--------------------------
+-- Oracle RMAN: Restore full database
+RUN {
+  RESTORE DATABASE;
+  RECOVER DATABASE;
+}
+
+-- MySQL: Restore from backup file (Command Line)
+mysql -u root -p cafedb < C:\MySQLBackups\cafedb_backup.sql
+
+Step 4: Verify Data Integrity
+-----------------------------
+-- Oracle / MySQL: Check row counts
+SELECT COUNT(*) FROM Customers;
+SELECT COUNT(*) FROM Orders;
+SELECT COUNT(*) FROM OrderDetails;
+SELECT COUNT(*) FROM Products;
+
+If counts match → Backup & Recovery Successful ✅
+
+Migration / Backup Summary
+--------------------------
+Tool Used: RMAN (Oracle) / mysqldump (MySQL)
+Backup Type: Full / Incremental
+Database: CafeDB schema
+Validation: Row counts matched → Data integrity maintained
