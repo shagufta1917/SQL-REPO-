@@ -1,0 +1,79 @@
+-- Save outputs in a file
+SPOOL C:\Users\Huma\Documents\Task2_output.txt;
+
+PROMPT ==== WINDOW FUNCTIONS ====
+
+-- 1. Row number: Har customer ke order ranking
+SELECT o.OrderID, c.Name, o.OrderDate,
+       ROW_NUMBER() OVER(PARTITION BY c.CustomerID ORDER BY o.OrderDate) AS OrderRank
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID;
+
+-- 2. Customer total spend
+SELECT c.Name, o.OrderID, p.ProductName,
+       od.Quantity * p.Price AS OrderAmount,
+       SUM(od.Quantity * p.Price) OVER(PARTITION BY c.CustomerID) AS TotalSpentByCustomer
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID
+JOIN OrderDetails od ON o.OrderID = od.OrderID
+JOIN Products p ON od.ProductID = p.ProductID;
+
+PROMPT ==== SUBQUERIES ====
+
+-- 3. Customers spending above average
+SELECT Name
+FROM Customers
+WHERE CustomerID IN (
+    SELECT o.CustomerID
+    FROM Orders o
+    JOIN OrderDetails od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY o.CustomerID
+    HAVING SUM(od.Quantity * p.Price) >
+           (SELECT AVG(total) 
+            FROM (
+                SELECT SUM(od2.Quantity * p2.Price) AS total
+                FROM Orders o2
+                JOIN OrderDetails od2 ON o2.OrderID = od2.OrderID
+                JOIN Products p2 ON od2.ProductID = p2.ProductID
+                GROUP BY o2.CustomerID
+            ))
+);
+
+-- 4. Most expensive product ordered
+SELECT ProductName, Price
+FROM Products
+WHERE ProductID IN (
+    SELECT ProductID FROM OrderDetails
+)
+ORDER BY Price DESC
+FETCH FIRST 1 ROWS ONLY;
+
+PROMPT ==== COMMON TABLE EXPRESSIONS (CTE) ====
+
+-- 5. Monthly sales
+WITH MonthlySales AS (
+    SELECT TO_CHAR(o.OrderDate, 'YYYY-MM') AS Month,
+           SUM(od.Quantity * p.Price) AS TotalSales
+    FROM Orders o
+    JOIN OrderDetails od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY TO_CHAR(o.OrderDate, 'YYYY-MM')
+)
+SELECT * FROM MonthlySales ORDER BY Month;
+
+-- 6. Top customer by spend
+WITH CustomerSales AS (
+    SELECT c.CustomerID, c.Name,
+           SUM(od.Quantity * p.Price) AS TotalSpent
+    FROM Customers c
+    JOIN Orders o ON c.CustomerID = o.CustomerID
+    JOIN OrderDetails od ON o.OrderID = od.OrderID
+    JOIN Products p ON od.ProductID = p.ProductID
+    GROUP BY c.CustomerID, c.Name
+)
+SELECT * FROM CustomerSales
+WHERE TotalSpent = (SELECT MAX(TotalSpent) FROM CustomerSales);
+
+-- Stop spooling
+SPOOL OFF;
