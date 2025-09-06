@@ -1,0 +1,15 @@
+-- Export command
+expdp system/password DIRECTORY=dpump_dir DUMPFILE=cafedb.dmp LOGFILE=cafedb.log SCHEMAS=SYSTEM
+
+-- Directory creation (if needed)
+CREATE OR REPLACE DIRECTORY dpump_dir AS 'C:\Users\Huma\Documents\OracleExports';
+GRANT READ, WRITE ON DIRECTORY dpump_dir TO system;
+
+-- Import command
+impdp system/password DIRECTORY=dpump_dir DUMPFILE=cafedb.dmp LOGFILE=cafedb_import.log SCHEMAS=SYSTEM
+
+-- Row count verification queries
+SELECT COUNT(*) FROM Customers;
+SELECT COUNT(*) FROM Orders;
+SELECT COUNT(*) FROM OrderDetails;
+SELECT COUNT(*) FROM Products;
